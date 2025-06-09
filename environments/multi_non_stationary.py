@@ -1,12 +1,14 @@
-# environments/multi_stochastic.py
+# environments/multi_non_stationary.py
 """
-Stochastic Environment for Multi-Product Pricing
+Highly Non-Stationary Environment for Multi-Product Pricing
 Assigned to: Maxence (Person 2)
 
-This module extends the single-product stochastic environment to multiple product types.
-Each buyer arrives with a valuation for each product. The buyer purchases all products
-where the offered price is below their valuation. The environment enforces a global 
-inventory constraint across all products.
+This module implements a non-stationary environment where buyer valuations
+are correlated across products and evolve rapidly over time.
+
+The valuations are generated from a latent variable that follows a
+sinusoidal trend with added noise. Each product has a valuation that is
+a linear transformation of this latent variable plus product-specific noise.
 """
 
 import numpy as np
@@ -26,14 +28,12 @@ class MultiProductBuyer(Buyer):
         return self.valuations.get(product_id, 0.0)
 
 
-class MultiProductStochasticEnvironment(BaseEnvironment):
+class MultiProductHighlyNonStationaryEnvironment(BaseEnvironment):
     """
-    Stochastic environment for multiple product pricing
+    Highly non-stationary environment for multi-product pricing
 
-    In each round, a buyer arrives with a vector of valuations, one for each product.
-    The company sets a price for each product, and the buyer purchases all products
-    priced below their respective valuations. There is a shared production capacity
-    across all products (B units total).
+    A latent global factor z_t drives all product valuations,
+    introducing correlation and fast-changing preferences.
     """
 
     def __init__(self,
@@ -41,74 +41,69 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
                  prices: List[float],
                  production_capacity: int,
                  total_rounds: int = 1000,
-                 valuation_distribution: str = "uniform",
-                 valuation_params: Dict[str, float] = None,
                  random_seed: Optional[int] = None):
         """
-        Initialize the multi-product stochastic environment
+        Initialize the non-stationary environment
 
         Args:
-            n_products: Number of different products (N)
-            prices: List of possible prices (shared for all products)
-            production_capacity: Total number of products that can be sold (B)
+            n_products: Number of products (N)
+            prices: List of available prices
+            production_capacity: Total inventory budget (B)
             total_rounds: Number of simulation rounds (T)
-            valuation_distribution: Distribution type ("uniform" by default)
-            valuation_params: Parameters for the distribution
-            random_seed: Random seed for reproducibility
+            random_seed: Seed for reproducibility
         """
         super().__init__(n_products=n_products, prices=prices, production_capacity=production_capacity)
 
         self.total_rounds = total_rounds
-        self.valuation_distribution = valuation_distribution
         self.random_seed = random_seed
-        self.valuation_params = valuation_params or self._default_params()
         self.rng = np.random.RandomState(random_seed)
 
         self.remaining_inventory = production_capacity
+        self.current_round = 0
+        self.z_t = 0.5  # latent factor
+        self.t = 0
 
-        print(f"🏭 Multi-Product Stochastic Environment initialized:")
+        # Product-specific sensitivity to z_t
+        self.a = np.linspace(0.8, 1.2, n_products)
+
+        print(f"⚡️ Highly Non-Stationary Multi-Product Environment Initialized")
         print(f"   📦 Products: {n_products}")
-        print(f"   💰 Price range: {min(prices):.2f} - {max(prices):.2f}")
-        print(f"   🎲 Distribution: {valuation_distribution}")
-        print(f"   ⚙️ Params: {self.valuation_params}")
-        print(f"   🏭 Inventory capacity: {production_capacity}")
+        print(f"   🎲 Prices: {min(prices)} to {max(prices)}")
+        print(f"   🧠 Latent dynamics: sinusoidal + noise")
+        print(f"   🏭 Inventory: {production_capacity}")
         print(f"   🔄 Rounds: {total_rounds}")
-
-    def _default_params(self):
-        """Return default distribution parameters"""
-        return {"low": 0.0, "high": 1.0}
 
     def reset(self) -> Dict[str, Any]:
         """
         Reset environment to initial state
 
         Returns:
-            Initial state dictionary
+            Initial state dict
         """
         self.current_round = 0
         self.remaining_inventory = self.production_capacity
-        return {
-            "round": self.current_round,
-            "inventory": self.remaining_inventory
-        }
+        self.z_t = 0.5
+        self.t = 0
+        return {"round": 0, "inventory": self.remaining_inventory}
 
     def _generate_buyer(self) -> MultiProductBuyer:
         """
-        Generate a buyer with valuations for each product
+        Generate a buyer with correlated and evolving valuations
 
         Returns:
             Buyer instance with per-product valuations
         """
+        # Evolve the latent factor z_t
+        self.z_t = 0.5 + 0.4 * np.sin(2 * np.pi * self.t / 25) + self.rng.normal(0, 0.05)
+
+        # Product valuations = a_i * z_t + noise
         valuations = {}
-        for pid in range(self.n_products):
-            if self.valuation_distribution == "uniform":
-                val = self.rng.uniform(
-                    self.valuation_params["low"],
-                    self.valuation_params["high"]
-                )
-            else:
-                raise NotImplementedError("Only uniform distribution is currently supported")
-            valuations[pid] = val
+        for i in range(self.n_products):
+            noise = self.rng.normal(0, 0.05)
+            val = self.a[i] * self.z_t + noise
+            valuations[i] = float(np.clip(val, 0.0, 1.0))  # keep in [0, 1]
+
+        self.t += 1
         return MultiProductBuyer(valuations)
 
     def step(self, selected_prices: Dict[int, float]) -> Tuple[Dict[str, Any], Dict[int, float], bool]:
@@ -116,13 +111,13 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
         Execute one round of the pricing game
 
         Args:
-            selected_prices: Dict mapping product_id -> price
+            selected_prices: Dict mapping product_id -> offered price
 
         Returns:
             Tuple (buyer_info, rewards, done)
         """
         if self.remaining_inventory <= 0 or self.current_round >= self.total_rounds:
-            return {}, {}, True  # Simulation is over
+            return {}, {}, True
 
         self.current_buyer = self._generate_buyer()
         buyer = self.current_buyer
@@ -130,13 +125,10 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
         purchases = buyer.make_purchases(selected_prices)
 
         rewards = {}
-        units_sold = 0
-
         for pid, bought in purchases.items():
             if bought and self.remaining_inventory > 0:
                 rewards[pid] = selected_prices[pid]
                 self.remaining_inventory -= 1
-                units_sold += 1
             else:
                 rewards[pid] = 0.0
 
@@ -150,13 +142,13 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
         done = self.remaining_inventory <= 0 or self.current_round >= self.total_rounds
 
         return buyer_info, rewards, done
-    
+
     def get_buyer_valuations(self) -> Dict[int, float]:
         """
-        Get current buyer's valuations
+        Return current buyer valuations
 
         Returns:
-            Dict mapping product_id -> buyer's valuation
+            Dict product_id -> valuation
         """
         if not hasattr(self, "current_buyer") or self.current_buyer is None:
             return {}
@@ -164,25 +156,23 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
 
 def demo_environment():
     """
-    Demo for the MultiProductStochasticEnvironment
+    Demo for the MultiProductHighlyNonStationaryEnvironment
     """
-    print("🎬 Demo: Multi-Product Stochastic Environment")
+    print("🎬 Demo: Highly Non-Stationary Multi-Product Environment")
     print("=" * 50)
 
-    env = MultiProductStochasticEnvironment(
-        n_products=3,
-        prices=[0.2, 0.3, 0.4, 0.5, 0.6],
+    env = MultiProductHighlyNonStationaryEnvironment(
+        n_products=2,
+        prices=[0.3, 0.4, 0.5],
         production_capacity=10,
-        total_rounds=5,
-        valuation_distribution="uniform",
-        valuation_params={"low": 0.0, "high": 1.0},
-        random_seed=42
+        total_rounds=10,
+        random_seed=123
     )
 
     env.reset()
 
-    for t in range(5):
-        selected_prices = {0: 0.3, 1: 0.4, 2: 0.5}
+    for t in range(10):
+        selected_prices = {0: 0.6, 1: 0.7, 2: 0.8}
         buyer_info, rewards, done = env.step(selected_prices)
 
         print(f"Round {t + 1}:")
@@ -197,4 +187,3 @@ def demo_environment():
 
 if __name__ == "__main__":
     demo_environment()
-
