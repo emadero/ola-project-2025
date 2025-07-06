@@ -1,10 +1,11 @@
-# algorithms/single_product/ucb.py
 """
-UCB1 Algorithm for Single Product Pricing (without inventory constraints)
-Assigned to: Federico Madero
+UCB1 Algorithm for Single Product Pricing (Multi-Armed Bandit Approach)
+Assigned to: Federico (Person 1)
 
-This module implements the Upper Confidence Bound (UCB1) algorithm for pricing
-a single product in a stochastic environment, ignoring inventory constraints.
+This module implements UCB1 following the correct Multi-Armed Bandit paradigm:
+- Each price is an "arm" with unknown expected reward
+- UCB1 balances exploration vs exploitation across price arms
+- Follows the UCB-like approach from auction theory
 """
 
 import numpy as np
@@ -18,18 +19,21 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from algorithms import BaseAlgorithm, UCBMixin
 
 
-class UCB1Algorithm(BaseAlgorithm, UCBMixin):
+class UCB1PricingAlgorithm(BaseAlgorithm, UCBMixin):
     """
-    UCB1 algorithm for single product pricing without inventory constraints
+    UCB1 algorithm for single product pricing following Multi-Armed Bandit paradigm
     
-    The algorithm maintains confidence bounds for each price and selects
-    the price with the highest upper confidence bound.
+    Key insight: Each price is a separate "arm" in the bandit problem
+    - Arms: Available prices [p1, p2, ..., pK]  
+    - Action: Select one price (arm) per round
+    - Reward: Revenue from that price
+    - Goal: Learn which prices give best expected revenue
     
-    UCB1 Formula: UCB(price) = mean_reward(price) + sqrt(2 * log(t) / n(price))
+    UCB1 Formula per arm: μ̂(p) + sqrt(2 * log(t) / n(p))
     where:
-    - mean_reward(price): average reward received for this price
-    - t: total number of rounds
-    - n(price): number of times this price was selected
+    - μ̂(p): estimated mean reward for price p
+    - t: total rounds played
+    - n(p): times price p was selected
     """
     
     def __init__(self, 
@@ -38,12 +42,12 @@ class UCB1Algorithm(BaseAlgorithm, UCBMixin):
                  confidence_width: float = np.sqrt(2),
                  random_seed: Optional[int] = None):
         """
-        Initialize UCB1 algorithm
+        Initialize UCB1 pricing algorithm
         
         Args:
-            prices: List of possible prices (discrete set P)
-            production_capacity: Maximum production capacity (ignored in this version)
-            confidence_width: Width parameter for confidence intervals (default: sqrt(2))
+            prices: List of possible prices (these are our "arms")
+            production_capacity: Not used in basic UCB1 (ignored)
+            confidence_width: UCB confidence width (usually sqrt(2))
             random_seed: Random seed for reproducibility
         """
         # Initialize base classes
@@ -56,113 +60,211 @@ class UCB1Algorithm(BaseAlgorithm, UCBMixin):
         # Single product ID
         self.product_id = 0
         
-        # Track performance
-        self.exploration_count = 0  # Number of times we selected unexplored prices
-        self.exploitation_count = 0  # Number of times we exploited best known price
+        # Multi-Armed Bandit statistics
+        # Each price is an arm with its own statistics
+        self.arm_counts = {}     # n(p): times each price was selected
+        self.arm_rewards = {}    # sum of rewards for each price
+        self.arm_means = {}      # μ̂(p): estimated mean reward for each price
         
-        print(f"🎯 UCB1 Algorithm initialized:")
-        print(f"   📦 Product: Single product (ID: {self.product_id})")
-        print(f"   💰 Available prices: {len(prices)} ({min(prices):.2f} - {max(prices):.2f})")
+        # Initialize arms (prices)
+        for price in self.prices:
+            arm_id = self._price_to_arm_id(price)
+            self.arm_counts[arm_id] = 0
+            self.arm_rewards[arm_id] = 0.0
+            self.arm_means[arm_id] = 0.0
+        
+        # Track exploration vs exploitation
+        self.exploration_count = 0
+        self.exploitation_count = 0
+        
+        print(f"🎯 UCB1 Pricing Algorithm initialized:")
+        print(f"   📦 Product: Single product (Multi-Armed Bandit)")
+        print(f"   🎰 Arms (prices): {len(prices)} arms from {min(prices):.2f} to {max(prices):.2f}")
         print(f"   🔍 Confidence width: {confidence_width:.3f}")
         print(f"   ⚠️  Inventory constraints: IGNORED")
+        print(f"   🎲 Arms: {[f'{p:.2f}' for p in prices]}")
+    
+    def _price_to_arm_id(self, price: float) -> int:
+        """Convert price to arm ID (index in price array)"""
+        return list(self.prices).index(price)
+    
+    def _arm_id_to_price(self, arm_id: int) -> float:
+        """Convert arm ID to price"""
+        return self.prices[arm_id]
     
     def select_prices(self) -> Dict[int, float]:
         """
-        Select price for the single product using UCB1 strategy
+        Select price using UCB1 Multi-Armed Bandit strategy
+        
+        For each arm (price), calculate:
+        UCB(p) = μ̂(p) + sqrt(2 * log(t) / n(p))
+        
+        Select arm with highest UCB score.
         
         Returns:
             Dict mapping product_id -> selected_price
         """
-        # For single product, we only select price for product_id=0
-        selected_price = self._select_price_ucb1()
+        selected_arm = self._select_arm_ucb1()
+        selected_price = self._arm_id_to_price(selected_arm)
         
         return {self.product_id: selected_price}
     
-    def _select_price_ucb1(self) -> float:
+    def _select_arm_ucb1(self) -> int:
         """
-        Select price using UCB1 algorithm
+        Select arm (price) using UCB1 algorithm
         
         Returns:
-            Selected price
+            Arm ID (index) of selected price
         """
-        best_price = None
+        best_arm = None
         best_ucb_score = -float('inf')
         
-        # Calculate UCB score for each price
-        for price in self.prices:
-            ucb_score = self.calculate_ucb_score(
-                self.product_id, 
-                price, 
-                max(1, self.round),  # Avoid log(0)
-                self.confidence_width
-            )
+        # Calculate UCB score for each arm (price)
+        for arm_id in range(len(self.prices)):
+            ucb_score = self._calculate_ucb_score(arm_id)
             
             if ucb_score > best_ucb_score:
                 best_ucb_score = ucb_score
-                best_price = price
+                best_arm = arm_id
         
         # Track exploration vs exploitation
-        key = (self.product_id, best_price)
-        if key not in self.counts or self.counts[key] == 0:
+        if self.arm_counts[best_arm] == 0:
             self.exploration_count += 1
         else:
             self.exploitation_count += 1
         
-        return best_price
+        return best_arm
+    
+    def _calculate_ucb_score(self, arm_id: int) -> float:
+        """
+        Calculate UCB1 score for a specific arm (price)
+        
+        UCB1 formula: μ̂(arm) + sqrt(2 * log(t) / n(arm))
+        
+        Args:
+            arm_id: ID of the arm (price index)
+            
+        Returns:
+            UCB score for this arm
+        """
+        # If arm never played, give infinite score (exploration)
+        if self.arm_counts[arm_id] == 0:
+            return float('inf')
+        
+        # If no rounds played yet, return mean estimate
+        if self.round <= 0:
+            return self.arm_means[arm_id]
+        
+        # Standard UCB1 formula
+        mean_reward = self.arm_means[arm_id]
+        confidence_radius = self.confidence_width * np.sqrt(
+            np.log(self.round) / self.arm_counts[arm_id]
+        )
+        
+        return mean_reward + confidence_radius
     
     def update(self, prices: Dict[int, float], rewards: Dict[int, float], 
                buyer_info: Dict[str, Any]) -> None:
         """
-        Update algorithm with feedback from current round
+        Update Multi-Armed Bandit statistics
         
         Args:
-            prices: The prices that were selected
-            rewards: The rewards received for each product
-            buyer_info: Information about buyer behavior (valuations, purchases)
+            prices: The prices that were selected {product_id: price}
+            rewards: The rewards received {product_id: reward}
+            buyer_info: Information about buyer behavior
         """
-        # Call parent update
+        # Call parent update for history tracking
         super().update(prices, rewards, buyer_info)
         
-        # Update UCB statistics for single product
+        # Update Multi-Armed Bandit statistics
         if self.product_id in prices and self.product_id in rewards:
-            price = prices[self.product_id]
-            reward = rewards[self.product_id]
+            selected_price = prices[self.product_id]
+            received_reward = rewards[self.product_id]
             
-            self.update_ucb_stats(self.product_id, price, reward)
+            # Convert price to arm ID
+            arm_id = self._price_to_arm_id(selected_price)
+            
+            # Update arm statistics
+            self._update_arm_statistics(arm_id, received_reward)
+    
+    def _update_arm_statistics(self, arm_id: int, reward: float) -> None:
+        """
+        Update statistics for a specific arm after observing reward
+        
+        Args:
+            arm_id: ID of the arm that was played
+            reward: Reward received from playing this arm
+        """
+        # Increment count
+        self.arm_counts[arm_id] += 1
+        
+        # Update total rewards
+        self.arm_rewards[arm_id] += reward
+        
+        # Update mean reward (running average)
+        self.arm_means[arm_id] = self.arm_rewards[arm_id] / self.arm_counts[arm_id]
+    
+    def get_arm_statistics(self) -> Dict[str, Any]:
+        """
+        Get detailed statistics for all arms (prices)
+        
+        Returns:
+            Dictionary with statistics for each arm
+        """
+        arm_stats = {}
+        
+        for arm_id in range(len(self.prices)):
+            price = self._arm_id_to_price(arm_id)
+            
+            arm_stats[f"price_{price:.2f}"] = {
+                "arm_id": arm_id,
+                "price": price,
+                "times_selected": self.arm_counts[arm_id],
+                "total_reward": self.arm_rewards[arm_id],
+                "mean_reward": self.arm_means[arm_id],
+                "ucb_score": self._calculate_ucb_score(arm_id) if self.round > 0 else float('inf')
+            }
+        
+        return arm_stats
+    
+    def get_best_arm(self) -> int:
+        """
+        Get arm with highest empirical mean (pure exploitation)
+        
+        Returns:
+            Arm ID of best arm based on current estimates
+        """
+        best_arm = 0
+        best_mean = self.arm_means[0]
+        
+        for arm_id in range(len(self.prices)):
+            if self.arm_means[arm_id] > best_mean:
+                best_mean = self.arm_means[arm_id]
+                best_arm = arm_id
+        
+        return best_arm
     
     def get_best_price(self) -> float:
         """
-        Get the price with highest average reward (exploitation only)
+        Get price with highest empirical mean reward
         
         Returns:
-            Price with highest average reward
+            Best price based on current estimates
         """
-        best_price = self.prices[0]
-        best_reward = -float('inf')
-        
-        for price in self.prices:
-            key = (self.product_id, price)
-            if key in self.values and self.values[key] > best_reward:
-                best_reward = self.values[key]
-                best_price = price
-        
-        return best_price
+        best_arm = self.get_best_arm()
+        return self._arm_id_to_price(best_arm)
     
     def get_ucb_scores(self) -> Dict[float, float]:
         """
-        Get current UCB scores for all prices
+        Get current UCB scores for all arms (prices)
         
         Returns:
             Dict mapping price -> UCB score
         """
         scores = {}
-        for price in self.prices:
-            scores[price] = self.calculate_ucb_score(
-                self.product_id,
-                price,
-                max(1, self.round),
-                self.confidence_width
-            )
+        for arm_id in range(len(self.prices)):
+            price = self._arm_id_to_price(arm_id)
+            scores[price] = self._calculate_ucb_score(arm_id)
         return scores
     
     def get_algorithm_stats(self) -> Dict[str, Any]:
@@ -172,37 +274,28 @@ class UCB1Algorithm(BaseAlgorithm, UCBMixin):
         Returns:
             Dictionary with algorithm performance statistics
         """
-        price_stats = self.get_price_statistics(self.product_id)
+        # Find most and least selected arms
+        most_selected_arm = max(range(len(self.prices)), key=lambda x: self.arm_counts[x])
+        least_selected_count = min(self.arm_counts.values())
+        least_selected_arms = [i for i in range(len(self.prices)) if self.arm_counts[i] == least_selected_count]
         
         # Calculate exploration vs exploitation ratio
         total_actions = self.exploration_count + self.exploitation_count
         exploration_ratio = self.exploration_count / max(1, total_actions)
         
-        # Find most and least selected prices
-        most_selected_price = None
-        least_selected_price = None
-        max_count = -1
-        min_count = float('inf')
-        
-        for price, stats in price_stats.items():
-            if stats['count'] > max_count:
-                max_count = stats['count']
-                most_selected_price = price
-            if stats['count'] < min_count and stats['count'] > 0:
-                min_count = stats['count']
-                least_selected_price = price
-        
         return {
-            "algorithm": "UCB1",
+            "algorithm": "UCB1 Multi-Armed Bandit",
             "total_rounds": self.round,
+            "num_arms": len(self.prices),
             "exploration_count": self.exploration_count,
             "exploitation_count": self.exploitation_count,
             "exploration_ratio": exploration_ratio,
+            "best_arm_id": self.get_best_arm(),
             "best_price": self.get_best_price(),
-            "most_selected_price": most_selected_price,
-            "most_selected_count": max_count,
-            "least_selected_price": least_selected_price,
-            "least_selected_count": min_count,
+            "most_selected_arm": most_selected_arm,
+            "most_selected_price": self._arm_id_to_price(most_selected_arm),
+            "most_selected_count": self.arm_counts[most_selected_arm],
+            "least_selected_count": least_selected_count,
             "confidence_width": self.confidence_width,
             "total_reward": self.get_cumulative_reward(),
             "average_reward": self.get_cumulative_reward() / max(1, self.round)
@@ -212,72 +305,126 @@ class UCB1Algorithm(BaseAlgorithm, UCBMixin):
         """
         Calculate theoretical regret bounds for UCB1
         
+        UCB1 theoretical regret bound: O(sqrt(K * log(T) * T))
+        where K = number of arms, T = number of rounds
+        
         Returns:
             Dictionary with regret bound information
         """
         if self.round == 0:
-            return {"theoretical_regret_bound": 0.0}
+            return {
+                "theoretical_regret_bound": 0.0,
+                "regret_bound_per_round": 0.0,
+                "number_of_arms": len(self.prices),
+                "rounds_played": 0,
+                "log_factor": 0.0
+            }
         
-        # UCB1 theoretical regret bound: O(sqrt(K * log(T) * T))
-        # where K is number of arms (prices) and T is number of rounds
-        K = len(self.prices)
-        T = self.round
+        K = len(self.prices)  # Number of arms
+        T = self.round        # Number of rounds
         
         if T > 1:
-            # Simplified bound calculation
-            theoretical_bound = np.sqrt(K * np.log(T) * T)
+            # UCB1 regret bound: 8 * sqrt(K * log(T) * T)
+            # This is a simplified version of the theoretical bound
+            theoretical_bound = 8 * np.sqrt(K * np.log(T) * T)
+            log_factor = np.log(T)
         else:
             theoretical_bound = 0.0
+            log_factor = 0.0
         
         return {
             "theoretical_regret_bound": theoretical_bound,
             "regret_bound_per_round": theoretical_bound / max(1, T),
             "number_of_arms": K,
-            "rounds_played": T
+            "rounds_played": T,
+            "log_factor": log_factor
         }
+    
+    def simulate_oracle_regret(self, environment) -> float:
+        """
+        Calculate regret vs oracle (best fixed arm in hindsight)
+        
+        Args:
+            environment: Environment with oracle functionality
+            
+        Returns:
+            Cumulative regret vs oracle
+        """
+        if not hasattr(environment, 'get_optimal_price'):
+            return 0.0
+        
+        # Get oracle performance
+        oracle_price = environment.get_optimal_price()
+        oracle_rewards = environment.simulate_oracle(n_rounds=self.round)
+        oracle_total = sum(oracle_rewards)
+        
+        # Get our performance
+        our_total = self.get_cumulative_reward()
+        
+        # Regret = Oracle - Ours
+        regret = oracle_total - our_total
+        return max(0.0, regret)  # Regret can't be negative
 
 
-def create_default_ucb1() -> UCB1Algorithm:
+def create_default_ucb1() -> UCB1PricingAlgorithm:
     """
-    Create a default UCB1 algorithm for testing
+    Create a default UCB1 pricing algorithm for testing
     
     Returns:
         Configured UCB1 algorithm instance
     """
-    # Standard discrete price set
+    # Standard discrete price set (these are our "arms")
     prices = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     
-    return UCB1Algorithm(
+    return UCB1PricingAlgorithm(
         prices=prices,
-        production_capacity=10,  # Will be ignored
-        confidence_width=np.sqrt(2),
+        production_capacity=10,  # Ignored in basic UCB1
+        confidence_width=np.sqrt(2),  # Standard UCB1 parameter
         random_seed=42
     )
 
 
 def demo_ucb1():
     """
-    Demonstrate the UCB1 algorithm
+    Demonstrate the UCB1 Multi-Armed Bandit algorithm
     """
-    print("🎮 Demo: UCB1 Algorithm for Single Product Pricing")
+    print("🎮 Demo: UCB1 Multi-Armed Bandit for Pricing")
     print("=" * 60)
     
     # Create algorithm
     ucb1 = create_default_ucb1()
     
+    # Show initial state
+    print(f"\n📊 Initial UCB Scores (all arms unexplored):")
+    initial_scores = ucb1.get_ucb_scores()
+    for price, score in sorted(initial_scores.items()):
+        print(f"  Price ${price:.2f}: {score}")
+    
     # Simulate some rounds
     print(f"\n🎯 Running 10 demo rounds:")
     
     # Mock buyer responses (normally this would come from environment)
-    mock_buyer_valuations = [0.7, 0.3, 0.8, 0.5, 0.9, 0.2, 0.6, 0.4, 0.75, 0.35]
+    mock_scenarios = [
+        (0.7, "High valuation buyer"),
+        (0.3, "Low valuation buyer"), 
+        (0.8, "High valuation buyer"),
+        (0.5, "Medium valuation buyer"),
+        (0.9, "Very high valuation buyer"),
+        (0.2, "Very low valuation buyer"),
+        (0.6, "Medium-high valuation buyer"),
+        (0.4, "Medium-low valuation buyer"),
+        (0.75, "High valuation buyer"),
+        (0.35, "Low-medium valuation buyer")
+    ]
     
-    for round_num in range(10):
-        # Select price
+    for round_num, (buyer_valuation, buyer_type) in enumerate(mock_scenarios):
+        print(f"\n--- Round {round_num + 1}: {buyer_type} (valuation=${buyer_valuation:.2f}) ---")
+        
+        # UCB1 selects arm (price)
         selected_prices = ucb1.select_prices()
         price = selected_prices[0]
         
-        # Mock buyer response
-        buyer_valuation = mock_buyer_valuations[round_num]
+        # Simulate buyer response
         purchased = buyer_valuation >= price
         reward = price if purchased else 0.0
         
@@ -287,44 +434,42 @@ def demo_ucb1():
             "purchases": {0: purchased},
             "round": round_num
         }
-        
         rewards = {0: reward}
         
         # Update algorithm
         ucb1.update(selected_prices, rewards, buyer_info)
         
-        print(f"Round {round_num + 1}:")
-        print(f"  💰 Price selected: {price:.2f}")
-        print(f"  👤 Buyer valuation: {buyer_valuation:.3f}")
-        print(f"  🛒 Purchased: {purchased}")
-        print(f"  💵 Revenue: {reward:.2f}")
+        print(f"  🎰 Selected arm: Price ${price:.2f}")
+        print(f"  🛒 Purchase made: {purchased}")
+        print(f"  💵 Reward: ${reward:.2f}")
+        
+        # Show top 3 UCB scores after this round
+        current_scores = ucb1.get_ucb_scores()
+        top_3 = sorted(current_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+        print(f"  📈 Top 3 UCB scores: {[(f'${p:.2f}', f'{s:.2f}' if s != float('inf') else 'INF') for p, s in top_3]}")
     
-    # Show UCB scores
-    print(f"\n📊 Final UCB Scores:")
-    ucb_scores = ucb1.get_ucb_scores()
-    for price, score in sorted(ucb_scores.items()):
-        if score == float('inf'):
-            print(f"  Price {price:.2f}: UNEXPLORED")
-        else:
-            print(f"  Price {price:.2f}: {score:.3f}")
+    # Show final arm statistics
+    print(f"\n📊 Final Arm Statistics:")
+    arm_stats = ucb1.get_arm_statistics()
+    for arm_name, stats in arm_stats.items():
+        if stats['times_selected'] > 0:
+            print(f"  {arm_name}: selected {stats['times_selected']} times, "
+                  f"mean reward ${stats['mean_reward']:.3f}, "
+                  f"UCB score {stats['ucb_score']:.3f}")
     
-    # Show algorithm statistics
-    stats = ucb1.get_algorithm_stats()
-    print(f"\n📈 Algorithm Statistics:")
-    for key, value in stats.items():
-        if isinstance(value, float):
-            print(f"  {key}: {value:.3f}")
-        else:
-            print(f"  {key}: {value}")
+    # Show algorithm summary
+    summary = ucb1.get_algorithm_stats()
+    print(f"\n🎯 Algorithm Summary:")
+    print(f"  Best arm: Price ${summary['best_price']:.2f}")
+    print(f"  Total reward: ${summary['total_reward']:.2f}")
+    print(f"  Average reward: ${summary['average_reward']:.3f}")
+    print(f"  Exploration ratio: {summary['exploration_ratio']:.3f}")
     
     # Show regret bounds
     bounds = ucb1.get_regret_bounds()
-    print(f"\n🎯 Regret Analysis:")
-    for key, value in bounds.items():
-        if isinstance(value, float):
-            print(f"  {key}: {value:.3f}")
-        else:
-            print(f"  {key}: {value}")
+    print(f"\n📐 Theoretical Analysis:")
+    print(f"  UCB1 regret bound: {bounds['theoretical_regret_bound']:.2f}")
+    print(f"  Regret bound per round: {bounds['regret_bound_per_round']:.3f}")
 
 
 if __name__ == "__main__":
