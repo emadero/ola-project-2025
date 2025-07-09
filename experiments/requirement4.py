@@ -15,6 +15,7 @@ The goal is to test the algorithm's adaptability in both settings.
 import sys
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Make project modules accessible
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -26,8 +27,8 @@ from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
 # Shared experiment configuration
 N_PRODUCTS = 10
 PRICES = [0.2, 0.3, 0.4, 0.5, 0.6]
-INVENTORY = 500
-ROUNDS = 90
+INVENTORY = 50000
+ROUNDS = 9000
 
 def run_experiment(env, algo_name, title):
     """
@@ -99,6 +100,54 @@ def run_experiment(env, algo_name, title):
 
     plt.tight_layout()
     plt.show()
+    
+        # --- Oracle estimation: best fixed prices ---
+    def estimate_best_fixed_prices(n_simulations=1000):
+        expected_rewards = np.zeros((N_PRODUCTS, len(PRICES)))
+        for _ in range(n_simulations):
+            buyer = env._generate_buyer()
+            for pid in range(N_PRODUCTS):
+                for i, price in enumerate(PRICES):
+                    expected_rewards[pid, i] += float(buyer.valuations[pid] >= price)
+        expected_rewards /= n_simulations
+        expected_revenue = expected_rewards * PRICES
+        best_indices = np.argmax(expected_revenue, axis=1)
+        best_prices = {pid: PRICES[best_indices[pid]] for pid in range(N_PRODUCTS)}
+        best_per_round = sum(expected_revenue[pid, best_indices[pid]] for pid in range(N_PRODUCTS))
+        return best_prices, best_per_round
+
+    # Compute oracle reward & regret
+    oracle_prices, oracle_expected_per_round = estimate_best_fixed_prices()
+    oracle_rewards = [oracle_expected_per_round] * len(rewards_log)
+    cumulative_oracle = np.cumsum(oracle_rewards)
+    cumulative_algo = np.cumsum(rewards_log)
+    cumulative_regret = cumulative_oracle - cumulative_algo
+    average_regret = cumulative_regret / np.arange(1, len(cumulative_regret) + 1)
+
+    # --- Plot: Cumulative Rewards + Regret ---
+    plt.figure(figsize=(10, 5))
+    plt.plot(rounds, cumulative_algo, label="Cumulative Primal-Dual Reward")
+    plt.plot(rounds, cumulative_oracle, label="Cumulative Oracle Reward", color='orange')
+    plt.plot(rounds, cumulative_regret, label="Cumulative Regret", linestyle="--", color="red")
+    plt.xlabel("Round")
+    plt.ylabel("Cumulative Reward")
+    plt.title(f"{algo_name} vs Oracle: Reward and Regret")
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+    # --- Plot: Average Regret ---
+    plt.figure(figsize=(10, 5))
+    plt.plot(rounds, average_regret, color='purple', label="Average Regret R(T)/T")
+    plt.xlabel("Round")
+    plt.ylabel("Average Regret")
+    plt.title(f"Average Regret per Round - {algo_name}")
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
 
 
 def main():
@@ -127,6 +176,8 @@ def main():
         random_seed=42
     )
     run_experiment(non_stationary_env, "Primal-Dual (Non-Stationary)", "Requirement 4 - Non-Stationary Environment")
+    
+    
 
 
 if __name__ == "__main__":
