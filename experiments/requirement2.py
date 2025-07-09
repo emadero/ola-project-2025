@@ -10,6 +10,7 @@ in a stochastic environment with joint buyer valuations.
 import sys
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Add root directory to sys.path to enable relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -24,8 +25,8 @@ def main():
     # --- Configuration ---
     N_PRODUCTS = 5
     PRICES = [0.2, 0.3, 0.4, 0.5, 0.6]
-    INVENTORY = 500
-    ROUNDS = 175
+    INVENTORY = 5000
+    ROUNDS = 1750
 
     # --- Initialize environment ---
     env = MultiProductStochasticEnvironment(
@@ -118,6 +119,112 @@ def main():
     plt.tight_layout()
     plt.show()
 
+
+    # --- Oracle computation: estimate best fixed prices over multiple simulations ---
+    def estimate_best_fixed_prices(n_simulations=1000):
+        expected_rewards = np.zeros((N_PRODUCTS, len(PRICES)))
+
+        for _ in range(n_simulations):
+            buyer = env._generate_buyer()
+            for pid in range(N_PRODUCTS):
+                for i, price in enumerate(PRICES):
+                    expected_rewards[pid, i] += float(buyer.valuations[pid] >= price)
+
+        expected_rewards /= n_simulations
+        expected_revenue = expected_rewards * PRICES
+
+        best_indices = np.argmax(expected_revenue, axis=1)
+        best_prices = {pid: PRICES[best_indices[pid]] for pid in range(N_PRODUCTS)}
+        best_per_round = sum(expected_revenue[pid, best_indices[pid]] for pid in range(N_PRODUCTS))
+        return best_prices, best_per_round
+
+    # Compute best fixed prices and regret
+    oracle_prices, oracle_expected_revenue_per_round = estimate_best_fixed_prices()
+    oracle_revenues = [oracle_expected_revenue_per_round] * len(rewards_log)
+    regret = np.cumsum(np.array(oracle_revenues) - np.array(rewards_log))
+
+    print(f"💰 UCB1 revenue per round (estimated): {total_revenue/len(rewards_log) :.3f}")
+    print(f"\n🔍 Oracle revenue per round (estimated): {oracle_expected_revenue_per_round:.3f}")
+    print(f"📉 Total regret after {len(rewards_log)} rounds: {regret[-1]:.3f}")
+    
+    simulate_ucb_vs_oracle(rewards_log, env, PRICES, ROUNDS)
+
+def compute_oracle_rewards(env, prices, rounds):
+    """
+    Simule les meilleures actions fixes (oracle) pour chaque produit.
+    Retourne la courbe de reward cumulatif.
+    """
+    best_combo = {}
+
+    # Estimation empirique : simulate for each product and price
+    estimated_rewards = {}
+    for pid in range(env.n_products):
+        best_price = None
+        best_expected_reward = 0
+        for p in prices:
+            total = 0
+            for _ in range(1000):  # simulate 1000 buyers
+                buyer = env._generate_buyer()
+                if buyer.valuations[pid] >= p:
+                    total += p
+            expected = total / 1000
+            if expected > best_expected_reward:
+                best_expected_reward = expected
+                best_price = p
+        best_combo[pid] = best_price
+
+    # Simulate rounds with best prices
+    env.reset()
+    oracle_rewards = []
+    total = 0
+    for _ in range(rounds):
+        buyer = env._generate_buyer()
+        rewards = 0
+        allowed = env.remaining_inventory
+        for pid in range(env.n_products):
+            if buyer.valuations[pid] >= best_combo[pid] and allowed > 0:
+                rewards += best_combo[pid]
+                allowed -= 1
+        total += rewards
+        oracle_rewards.append(total)
+    return oracle_rewards
+
+def simulate_ucb_vs_oracle(rewards_log, env, prices, rounds):
+    """
+    Generate cumulative reward curves for UCB1 and oracle, and compute regret.
+    """
+    cumulative_ucb_reward = np.cumsum(rewards_log)
+    oracle_rewards = compute_oracle_rewards(env, prices, len(rewards_log))
+    cumulative_oracle_reward = np.array(oracle_rewards)
+    regret = cumulative_oracle_reward - cumulative_ucb_reward
+
+    x_axis = np.arange(1, len(regret) + 1)
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_axis, cumulative_ucb_reward, label="Cumulative UCB1 Reward")
+    plt.plot(x_axis, cumulative_oracle_reward, label="Cumulative Oracle Reward")
+    plt.plot(x_axis, regret, label="Cumulative Regret", linestyle="--", color="red")
+    plt.xlabel("Round")
+    plt.ylabel("Cumulative Reward")
+    plt.title("UCB1 vs Oracle: Reward and Regret")
+    plt.grid(True, linestyle="--", alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
+    # --- Plot average regret R(T)/T ---
+    avg_regret = regret / np.arange(1, len(regret) + 1)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(np.arange(1, len(regret) + 1), avg_regret, label="Average Regret R(T)/T", color="purple")
+    plt.xlabel("Round")
+    plt.ylabel("Average Regret")
+    plt.title("Average Regret per Round")
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    return cumulative_oracle_reward, regret
 
 
 if __name__ == "__main__":
