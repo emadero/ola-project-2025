@@ -27,7 +27,7 @@ from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
 N_PRODUCTS = 10
 PRICES = [0.2, 0.3, 0.4, 0.5, 0.6]
 INVENTORY = 500
-ROUNDS = 300
+ROUNDS = 90
 
 def run_experiment(env, algo_name, title):
     """
