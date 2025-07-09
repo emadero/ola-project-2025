@@ -98,6 +98,27 @@ def main():
 
     plt.tight_layout()
     plt.show()
+    
+    final_ucbs = algo.get_final_ucbs()
+
+    fig, axs = plt.subplots(1, N_PRODUCTS, figsize=(15, 4))
+    for pid in range(N_PRODUCTS):
+        bars = axs[pid].bar([str(p) for p in PRICES], final_ucbs[pid])
+        
+        axs[pid].set_title(f"Product {pid +1} - Final UCBs")
+        axs[pid].set_xlabel("Price")
+        axs[pid].set_ylabel("UCB")
+        axs[pid].grid(True, linestyle='--', alpha=0.5)
+
+        for bar in bars:
+            height = bar.get_height()
+            axs[pid].text(bar.get_x() + bar.get_width() / 2.0, height + 0.01, f'{height:.2f}', ha='center', fontsize=8)
+
+
+    plt.tight_layout()
+    plt.show()
+
+
 
 if __name__ == "__main__":
     main()
