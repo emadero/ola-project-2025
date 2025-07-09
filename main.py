@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Main entry point for the online pricing algorithms project.
