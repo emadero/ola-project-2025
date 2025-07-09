@@ -16,6 +16,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Make project modules accessible
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -27,8 +28,8 @@ from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
 # Shared experiment configuration
 N_PRODUCTS = 10
 PRICES = [0.2, 0.3, 0.4, 0.5, 0.6]
-INVENTORY = 50000
-ROUNDS = 9000
+INVENTORY = 500
+ROUNDS = 90
 
 def run_experiment(env, algo_name, title):
     """
@@ -55,6 +56,17 @@ def run_experiment(env, algo_name, title):
 
     print(f"\n📊 {title}")
     print("=" * 60)
+    
+    LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    csv_name = algo_name.lower().replace(" ", "_").replace("(", "").replace(")", "") + "_log.csv"
+    csv_path = os.path.join(LOG_DIR, csv_name)
+
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+
+    log_rows = []
 
     for t in range(ROUNDS):
         prices, indices = algo.select_prices()
@@ -65,13 +77,16 @@ def run_experiment(env, algo_name, title):
         total_revenue += round_revenue
         inventory_used += sum(buyer_info["purchases"].values())
 
-        print(f"\nRound {t + 1}")
-        print(f"  Selected prices: {prices}")
-        print(f"  Buyer valuations: {buyer_info['valuations']}")
-        print(f"  Purchases: {buyer_info['purchases']}")
-        print(f"  Rewards: {rewards}")
-        print(f"  Revenue this round: {round_revenue:.2f}")
-        print(f"  Remaining inventory: {env.remaining_inventory}")
+        
+        log_rows.append({
+            "Round": t + 1,
+            "Selected Prices": prices,
+            "Buyer Valuations": buyer_info["valuations"],
+            "Purchases": buyer_info["purchases"],
+            "Rewards": rewards,
+            "Revenue": round_revenue,
+            "Remaining Inventory": env.remaining_inventory
+        })
 
         rewards_log.append(round_revenue)
         cumulative_inventory.append(inventory_used)
@@ -82,6 +97,10 @@ def run_experiment(env, algo_name, title):
             break
 
     print(f"\n💰 Total Revenue: {total_revenue:.2f}")
+
+    df_log = pd.DataFrame(log_rows)
+    df_log.to_csv(csv_path, index=False)
+    print(f"📁 Log saved to: {csv_path}")
 
     # Plot results
     fig, axs = plt.subplots(2, 1, figsize=(10, 6))

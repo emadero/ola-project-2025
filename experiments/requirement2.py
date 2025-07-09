@@ -11,6 +11,8 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
 
 # Add root directory to sys.path to enable relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -25,8 +27,8 @@ def main():
     # --- Configuration ---
     N_PRODUCTS = 5
     PRICES = [0.2, 0.3, 0.4, 0.5, 0.6]
-    INVENTORY = 5000
-    ROUNDS = 1750
+    INVENTORY = 500
+    ROUNDS = 175
 
     # --- Initialize environment ---
     env = MultiProductStochasticEnvironment(
@@ -53,6 +55,16 @@ def main():
     rewards_log = []
     cumulative_inventory = []
     rounds = []
+    
+    
+    LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
+    os.makedirs(LOG_DIR, exist_ok=True)
+    csv_path = os.path.join(LOG_DIR, "combinatorial_ucb_log.csv")
+
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
+
+    log_rows = []
 
     # --- Run simulation ---
     for t in range(ROUNDS):
@@ -63,14 +75,16 @@ def main():
         round_revenue = sum(rewards.values())
         total_revenue += round_revenue
         inventory_used += sum(buyer_info['purchases'].values())
-
-        print(f"\nRound {t + 1}")
-        print(f"  Selected prices: {prices}")
-        print(f"  Buyer valuations: {buyer_info['valuations']}")
-        print(f"  Purchases: {buyer_info['purchases']}")
-        print(f"  Rewards: {rewards}")
-        print(f"  Revenue this round: {round_revenue:.2f}")
-        print(f"  Remaining inventory: {env.remaining_inventory}")
+        
+        log_rows.append({
+            "Round": t + 1,
+            "Selected Prices": prices,
+            "Buyer Valuations": buyer_info['valuations'],
+            "Purchases": buyer_info['purchases'],
+            "Rewards": rewards,
+            "Revenue": round_revenue,
+            "Remaining Inventory": env.remaining_inventory
+        })
 
         rewards_log.append(round_revenue)
         cumulative_inventory.append(inventory_used)
@@ -81,6 +95,11 @@ def main():
             break
 
     print(f"\n💰 Total Revenue: {total_revenue:.2f}")
+    
+    # --- Save CSV log ---
+    df_log = pd.DataFrame(log_rows)
+    df_log.to_csv(csv_path, index=False)
+    print(f"📁 Log saved to: {csv_path}")
 
     # --- Visualization ---
     fig, axs = plt.subplots(2, 1, figsize=(10, 6))
