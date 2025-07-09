@@ -124,9 +124,19 @@ class MultiProductHighlyNonStationaryEnvironment(BaseEnvironment):
 
         purchases = buyer.make_purchases(selected_prices)
 
+        allowed = self.remaining_inventory
+        truncated_purchases = {}
+        for pid in purchases:
+            if purchases[pid] and allowed > 0:
+                truncated_purchases[pid] = True
+                allowed -= 1
+            else:
+                truncated_purchases[pid] = False
+
+        #Compute rewards and update inventory
         rewards = {}
-        for pid, bought in purchases.items():
-            if bought and self.remaining_inventory > 0:
+        for pid, bought in truncated_purchases.items():
+            if bought:
                 rewards[pid] = selected_prices[pid]
                 self.remaining_inventory -= 1
             else:
@@ -135,7 +145,7 @@ class MultiProductHighlyNonStationaryEnvironment(BaseEnvironment):
         buyer_info = {
             "round": self.current_round,
             "valuations": buyer.valuations,
-            "purchases": purchases
+            "purchases": truncated_purchases
         }
 
         self.current_round += 1

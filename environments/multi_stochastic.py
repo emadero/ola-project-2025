@@ -129,21 +129,27 @@ class MultiProductStochasticEnvironment(BaseEnvironment):
 
         purchases = buyer.make_purchases(selected_prices)
 
+        new_purchases = {}
         rewards = {}
         units_sold = 0
-
+        allowed = self.remaining_inventory
+        
         for pid, bought in purchases.items():
-            if bought and self.remaining_inventory > 0:
+            if bought and allowed > 0:
+                new_purchases[pid] = True
                 rewards[pid] = selected_prices[pid]
-                self.remaining_inventory -= 1
+                allowed -= 1
                 units_sold += 1
             else:
+                new_purchases[pid] = False
                 rewards[pid] = 0.0
+
+        self.remaining_inventory -= units_sold
 
         buyer_info = {
             "round": self.current_round,
             "valuations": buyer.valuations,
-            "purchases": purchases
+            "purchases": new_purchases
         }
 
         self.current_round += 1
