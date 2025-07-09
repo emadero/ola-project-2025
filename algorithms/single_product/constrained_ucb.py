@@ -1,6 +1,5 @@
 """
 UCB-like Algorithm for Single Product Pricing with Constraints
-Assigned to: Federico (Person 1)
 
 This module implements the UCB-like approach from auction theory adapted to pricing with constraints.
 Follows the paradigm: "Extend the UCB-like approach that we saw for auctions to the pricing problem"
@@ -87,13 +86,13 @@ class UCBConstrainedPricingAlgorithm(UCB1PricingAlgorithm):
         self.constraint_violations = 0
         self.feasible_arms_per_round = []
         
-        print(f"🏭 UCB-Constrained Pricing Algorithm initialized:")
-        print(f"   📦 Product: Single product (Constrained Multi-Armed Bandit)")
-        print(f"   🎰 Arms (prices): {len(prices)} arms from {min(prices):.2f} to {max(prices):.2f}")
-        print(f"   🏭 Production capacity: {production_capacity}")
-        print(f"   🔍 Reward confidence width: {confidence_width:.3f}")
-        print(f"   🔒 Constraint confidence width: {constraint_confidence_width:.3f}")
-        print(f"   ⚠️  Inventory constraints: ACTIVE (UCB-like approach)")
+        print(f" UCB-Constrained Pricing Algorithm initialized:")
+        print(f"   Product: Single product (Constrained Multi-Armed Bandit)")
+        print(f"   Arms (prices): {len(prices)} arms from {min(prices):.2f} to {max(prices):.2f}")
+        print(f"   Production capacity: {production_capacity}")
+        print(f"   Reward confidence width: {confidence_width:.3f}")
+        print(f"   Constraint confidence width: {constraint_confidence_width:.3f}")
+        print(f"   Inventory constraints: ACTIVE (UCB-like approach)")
     
     def select_prices(self) -> Dict[int, float]:
         """
@@ -276,7 +275,7 @@ class UCBConstrainedPricingAlgorithm(UCB1PricingAlgorithm):
     def reset_capacity(self) -> None:
         """Reset production capacity (e.g., at start of new period)"""
         self.remaining_capacity = self.total_capacity
-        print(f"🔄 Capacity reset: {self.remaining_capacity}/{self.total_capacity} available")
+        print(f" Capacity reset: {self.remaining_capacity}/{self.total_capacity} available")
     
     def get_constraint_statistics(self) -> Dict[str, Any]:
         """
@@ -427,109 +426,3 @@ def create_default_constrained_ucb1(capacity: int = 10) -> UCBConstrainedPricing
         constraint_confidence_width=np.sqrt(2), # Standard UCB for constraints
         random_seed=42
     )
-
-
-def demo_constrained_ucb1():
-    """
-    Demonstrate the UCB-Constrained pricing algorithm
-    """
-    print("🎮 Demo: UCB-Constrained Pricing (Auction-like Approach)")
-    print("=" * 70)
-    
-    # Create algorithm with limited capacity
-    constrained_ucb1 = create_default_constrained_ucb1(capacity=5)
-    
-    print(f"\n🎯 Running 12 demo rounds with capacity constraint:")
-    
-    # Mock buyer scenarios
-    mock_scenarios = [
-        (0.8, "High valuation buyer"),
-        (0.3, "Low valuation buyer"),
-        (0.9, "Very high valuation buyer"),
-        (0.5, "Medium valuation buyer"),
-        (0.7, "High valuation buyer"),
-        (0.2, "Very low valuation buyer"),
-        (0.6, "Medium-high valuation buyer"),
-        (0.4, "Medium-low valuation buyer"),
-        (0.85, "High valuation buyer"),
-        (0.35, "Low-medium valuation buyer"),
-        (0.75, "High valuation buyer"),
-        (0.45, "Medium valuation buyer")
-    ]
-    
-    for round_num, (buyer_valuation, buyer_type) in enumerate(mock_scenarios):
-        print(f"\n--- Round {round_num + 1}: {buyer_type} (valuation=${buyer_valuation:.2f}) ---")
-        print(f"💰 Remaining capacity: {constrained_ucb1.remaining_capacity}")
-        
-        # Show feasibility analysis
-        reward_bounds = constrained_ucb1._calculate_reward_ucb_bounds()
-        constraint_bounds = constrained_ucb1._calculate_constraint_lcb_bounds()
-        feasible_arms = constrained_ucb1._find_feasible_arms(constraint_bounds)
-        
-        print(f"🔍 Feasible arms: {[f'${constrained_ucb1._arm_id_to_price(arm):.2f}' for arm in feasible_arms[:3]]}...")
-        
-        # Select prices using UCB-constrained approach
-        selected_prices = constrained_ucb1.select_prices()
-        
-        if not selected_prices:
-            print("🚫 NO PRODUCTION (no feasible arms)")
-            constrained_ucb1.update({}, {}, {"round": round_num})
-            continue
-        
-        price = selected_prices[0]
-        purchased = buyer_valuation >= price
-        reward = price if purchased else 0.0
-        
-        buyer_info = {
-            "valuations": {0: buyer_valuation},
-            "purchases": {0: purchased},
-            "round": round_num
-        }
-        rewards = {0: reward}
-        
-        constrained_ucb1.update(selected_prices, rewards, buyer_info)
-        
-        print(f"🎰 Selected price: ${price:.2f}")
-        print(f"🛒 Purchase made: {purchased}")
-        print(f"💵 Revenue: ${reward:.2f}")
-        print(f"🏭 Capacity remaining: {constrained_ucb1.remaining_capacity}")
-    
-    # Show final analysis
-    print(f"\n📊 Final Algorithm Analysis:")
-    
-    # Algorithm statistics
-    stats = constrained_ucb1.get_algorithm_stats()
-    print(f"\n🎯 Performance Statistics:")
-    key_stats = ["total_rounds", "production_rate", "capacity_utilization", 
-                "average_reward", "exploration_ratio"]
-    for stat in key_stats:
-        if stat in stats:
-            value = stats[stat]
-            if isinstance(value, float):
-                print(f"  {stat}: {value:.3f}")
-            else:
-                print(f"  {stat}: {value}")
-    
-    # Feasibility analysis
-    feasibility = constrained_ucb1.get_feasibility_analysis()
-    print(f"\n🔍 Feasibility Analysis:")
-    for key, value in feasibility.items():
-        if isinstance(value, float):
-            print(f"  {key}: {value:.3f}")
-        else:
-            print(f"  {key}: {value}")
-    
-    # Bounds comparison for top arms
-    bounds_comparison = constrained_ucb1.compare_ucb_vs_constraint_bounds()
-    print(f"\n📈 UCB Bounds vs Constraint Bounds (top 5 arms):")
-    sorted_arms = sorted(bounds_comparison.items(), 
-                        key=lambda x: x[1]['reward_ucb'], reverse=True)[:5]
-    
-    for arm_name, data in sorted_arms:
-        feasible = "✅" if data['is_feasible'] else "❌"
-        print(f"  {arm_name}: reward_ucb={data['reward_ucb']:.3f}, "
-              f"constraint_lcb={data['constraint_lcb']:.3f}, feasible={feasible}")
-
-
-if __name__ == "__main__":
-    demo_constrained_ucb1()

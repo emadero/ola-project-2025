@@ -1,7 +1,6 @@
 # environments/stochastic.py
 """
 Stochastic Environment for Single Product Pricing
-Assigned to: Federico Madero
 
 This module implements a stochastic environment where buyer valuations
 are drawn from a probability distribution for a single product type.
@@ -65,12 +64,12 @@ class SingleProductStochasticEnvironment(BaseEnvironment):
         self.round_history = []
         
         print(f"🏭 Single Product Stochastic Environment initialized:")
-        print(f"   📦 Products: {self.n_products} (single product)")
-        print(f"   💰 Price range: {min(prices):.2f} - {max(prices):.2f}")
-        print(f"   🏭 Production capacity: {production_capacity}")
-        print(f"   🎲 Valuation distribution: {valuation_distribution}")
-        print(f"   ⚙️  Distribution params: {valuation_params}")
-        print(f"   🔄 Total rounds: {total_rounds}")
+        print(f"   Products: {self.n_products} (single product)")
+        print(f"   Price range: {min(prices):.2f} - {max(prices):.2f}")
+        print(f"   Production capacity: {production_capacity}")
+        print(f"   Valuation distribution: {valuation_distribution}")
+        print(f"   Distribution params: {valuation_params}")
+        print(f"   Total rounds: {total_rounds}")
     
     def _get_default_params(self, distribution: str) -> Dict[str, float]:
         """Get default parameters for different distributions"""
@@ -363,10 +362,10 @@ def demo_environment():
     
     # Reset environment
     initial_state = env.reset()
-    print(f"\n📊 Initial state: {initial_state}")
+    print(f"\n Initial state: {initial_state}")
     
     # Run a few rounds
-    print(f"\n🎯 Running 5 demo rounds:")
+    print(f"\n Running 5 demo rounds:")
     
     for round_num in range(5):
         # Random price selection for demo
@@ -376,15 +375,15 @@ def demo_environment():
         buyer_info, rewards, done = env.step(selected_prices)
         
         print(f"Round {round_num + 1}:")
-        print(f"  💰 Price offered: {price:.2f}")
-        print(f"  👤 Buyer valuation: {buyer_info['valuations'][0]:.3f}")
-        print(f"  🛒 Purchased: {buyer_info['purchases'][0]}")
-        print(f"  💵 Revenue: {rewards[0]:.2f}")
+        print(f"  Price offered: {price:.2f}")
+        print(f"  Buyer valuation: {buyer_info['valuations'][0]:.3f}")
+        print(f"  Purchased: {buyer_info['purchases'][0]}")
+        print(f"  Revenue: {rewards[0]:.2f}")
         print()
     
     # Show statistics
     stats = env.get_statistics()
-    print("📈 Environment Statistics:")
+    print("Environment Statistics:")
     for key, value in stats.items():
         if isinstance(value, float):
             print(f"  {key}: {value:.3f}")
@@ -393,7 +392,7 @@ def demo_environment():
     
     # Show optimal price
     optimal_price = env.get_optimal_price()
-    print(f"\n🎯 Optimal price (oracle): {optimal_price:.2f}")
+    print(f"\n Optimal price (oracle): {optimal_price:.2f}")
 
 
 if __name__ == "__main__":

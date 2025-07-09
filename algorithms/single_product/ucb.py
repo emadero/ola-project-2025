@@ -1,6 +1,5 @@
 """
 UCB1 Algorithm for Single Product Pricing (Multi-Armed Bandit Approach)
-Assigned to: Federico (Person 1)
 
 This module implements UCB1 following the correct Multi-Armed Bandit paradigm:
 - Each price is an "arm" with unknown expected reward
@@ -77,12 +76,12 @@ class UCB1PricingAlgorithm(BaseAlgorithm, UCBMixin):
         self.exploration_count = 0
         self.exploitation_count = 0
         
-        print(f"🎯 UCB1 Pricing Algorithm initialized:")
-        print(f"   📦 Product: Single product (Multi-Armed Bandit)")
-        print(f"   🎰 Arms (prices): {len(prices)} arms from {min(prices):.2f} to {max(prices):.2f}")
-        print(f"   🔍 Confidence width: {confidence_width:.3f}")
-        print(f"   ⚠️  Inventory constraints: IGNORED")
-        print(f"   🎲 Arms: {[f'{p:.2f}' for p in prices]}")
+        print(f"UCB1 Pricing Algorithm initialized:")
+        print(f"  Product: Single product (Multi-Armed Bandit)")
+        print(f"  Arms (prices): {len(prices)} arms from {min(prices):.2f} to {max(prices):.2f}")
+        print(f"  Confidence width: {confidence_width:.3f}")
+        print(f"  Inventory constraints: IGNORED")
+        print(f"  Arms: {[f'{p:.2f}' for p in prices]}")
     
     def _price_to_arm_id(self, price: float) -> int:
         """Convert price to arm ID (index in price array)"""
@@ -382,95 +381,3 @@ def create_default_ucb1() -> UCB1PricingAlgorithm:
         confidence_width=np.sqrt(2),  # Standard UCB1 parameter
         random_seed=42
     )
-
-
-def demo_ucb1():
-    """
-    Demonstrate the UCB1 Multi-Armed Bandit algorithm
-    """
-    print("🎮 Demo: UCB1 Multi-Armed Bandit for Pricing")
-    print("=" * 60)
-    
-    # Create algorithm
-    ucb1 = create_default_ucb1()
-    
-    # Show initial state
-    print(f"\n📊 Initial UCB Scores (all arms unexplored):")
-    initial_scores = ucb1.get_ucb_scores()
-    for price, score in sorted(initial_scores.items()):
-        print(f"  Price ${price:.2f}: {score}")
-    
-    # Simulate some rounds
-    print(f"\n🎯 Running 10 demo rounds:")
-    
-    # Mock buyer responses (normally this would come from environment)
-    mock_scenarios = [
-        (0.7, "High valuation buyer"),
-        (0.3, "Low valuation buyer"), 
-        (0.8, "High valuation buyer"),
-        (0.5, "Medium valuation buyer"),
-        (0.9, "Very high valuation buyer"),
-        (0.2, "Very low valuation buyer"),
-        (0.6, "Medium-high valuation buyer"),
-        (0.4, "Medium-low valuation buyer"),
-        (0.75, "High valuation buyer"),
-        (0.35, "Low-medium valuation buyer")
-    ]
-    
-    for round_num, (buyer_valuation, buyer_type) in enumerate(mock_scenarios):
-        print(f"\n--- Round {round_num + 1}: {buyer_type} (valuation=${buyer_valuation:.2f}) ---")
-        
-        # UCB1 selects arm (price)
-        selected_prices = ucb1.select_prices()
-        price = selected_prices[0]
-        
-        # Simulate buyer response
-        purchased = buyer_valuation >= price
-        reward = price if purchased else 0.0
-        
-        # Mock buyer info
-        buyer_info = {
-            "valuations": {0: buyer_valuation},
-            "purchases": {0: purchased},
-            "round": round_num
-        }
-        rewards = {0: reward}
-        
-        # Update algorithm
-        ucb1.update(selected_prices, rewards, buyer_info)
-        
-        print(f"  🎰 Selected arm: Price ${price:.2f}")
-        print(f"  🛒 Purchase made: {purchased}")
-        print(f"  💵 Reward: ${reward:.2f}")
-        
-        # Show top 3 UCB scores after this round
-        current_scores = ucb1.get_ucb_scores()
-        top_3 = sorted(current_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-        print(f"  📈 Top 3 UCB scores: {[(f'${p:.2f}', f'{s:.2f}' if s != float('inf') else 'INF') for p, s in top_3]}")
-    
-    # Show final arm statistics
-    print(f"\n📊 Final Arm Statistics:")
-    arm_stats = ucb1.get_arm_statistics()
-    for arm_name, stats in arm_stats.items():
-        if stats['times_selected'] > 0:
-            print(f"  {arm_name}: selected {stats['times_selected']} times, "
-                  f"mean reward ${stats['mean_reward']:.3f}, "
-                  f"UCB score {stats['ucb_score']:.3f}")
-    
-    # Show algorithm summary
-    summary = ucb1.get_algorithm_stats()
-    print(f"\n🎯 Algorithm Summary:")
-    print(f"  Best arm: Price ${summary['best_price']:.2f}")
-    print(f"  Total reward: ${summary['total_reward']:.2f}")
-    print(f"  Average reward: ${summary['average_reward']:.3f}")
-    print(f"  Exploration ratio: {summary['exploration_ratio']:.3f}")
-    
-    # Show regret bounds
-    bounds = ucb1.get_regret_bounds()
-    print(f"\n📐 Theoretical Analysis:")
-    print(f"  UCB1 regret bound: {bounds['theoretical_regret_bound']:.2f}")
-    print(f"  Regret bound per round: {bounds['regret_bound_per_round']:.3f}")
-
-
-if __name__ == "__main__":
-    demo_ucb1()

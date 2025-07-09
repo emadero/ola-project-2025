@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Requirement 1: Single Product & Stochastic Environment
-Assigned to: Federico (Person 1)
 
 This experiment implements and compares UCB1 algorithms for single product pricing:
 1. UCB1 without inventory constraints vs Oracle
@@ -34,9 +33,9 @@ try:
     from environments.stochastic import SingleProductStochasticEnvironment, create_default_environment
     from algorithms.single_product.ucb import UCB1PricingAlgorithm, create_default_ucb1
     from algorithms.single_product.constrained_ucb import UCBConstrainedPricingAlgorithm, create_default_constrained_ucb1
-    print("✅ Successfully imported all required components")
+    print(" Successfully imported all required components")
 except ImportError as e:
-    print(f"❌ Import error: {e}")
+    print(f" Import error: {e}")
     sys.exit(1)
 
 
@@ -69,7 +68,7 @@ def run_ucb1_vs_oracle_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     Returns:
         Dictionary with experiment results
     """
-    print(f"\n🧪 Experiment 1.1: UCB1 vs Oracle ({n_rounds} rounds)")
+    print(f"\n Experiment 1.1: UCB1 vs Oracle ({n_rounds} rounds)")
     print("=" * 60)
     
     # Create environment and algorithm
@@ -86,8 +85,8 @@ def run_ucb1_vs_oracle_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     oracle_rewards = env.simulate_oracle(n_rounds=n_rounds)
     oracle_cumulative = np.cumsum(oracle_rewards)
     
-    print(f"🎯 Oracle optimal price: ${optimal_price:.2f}")
-    print(f"🎯 Oracle total reward: ${oracle_cumulative[-1]:.2f}")
+    print(f" Oracle optimal price: ${optimal_price:.2f}")
+    print(f" Oracle total reward: ${oracle_cumulative[-1]:.2f}")
     
     # Run UCB1 experiment
     env.reset()
@@ -95,7 +94,7 @@ def run_ucb1_vs_oracle_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     ucb1_prices = []
     ucb1_regrets = []
     
-    print("🤖 Running UCB1 algorithm...")
+    print("Running UCB1 algorithm...")
     for round_num in range(n_rounds):
         # UCB1 selects price
         selected_prices = ucb1.select_prices()
@@ -130,7 +129,7 @@ def run_ucb1_vs_oracle_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     best_arm = ucb1.get_best_arm()
     best_price = ucb1.get_best_price()
     
-    print(f"\n📊 Results Summary:")
+    print(f"\n Results Summary:")
     print(f"   UCB1 total reward: ${ucb1_cumulative[-1]:.2f}")
     print(f"   UCB1 average reward: ${np.mean(ucb1_rewards):.3f}")
     print(f"   UCB1 best discovered price: ${best_price:.2f}")
@@ -167,7 +166,7 @@ def run_constrained_vs_unconstrained_experiment(n_rounds: int = 1000,
     Returns:
         Dictionary with experiment results
     """
-    print(f"\n🧪 Experiment 1.2: UCB1-Constrained vs UCB1 ({n_rounds} rounds, capacity={capacity})")
+    print(f"\n Experiment 1.2: UCB1-Constrained vs UCB1 ({n_rounds} rounds, capacity={capacity})")
     print("=" * 70)
     
     # Create environment
@@ -197,7 +196,7 @@ def run_constrained_vs_unconstrained_experiment(n_rounds: int = 1000,
     results = {}
     
     for alg_name, algorithm in algorithms:
-        print(f"\n🤖 Running {alg_name}...")
+        print(f"\n Running {alg_name}...")
         
         # Reset environment for fair comparison
         env.reset()
@@ -278,7 +277,7 @@ def run_constrained_vs_unconstrained_experiment(n_rounds: int = 1000,
     constrained_total = results["UCB1-Constrained"]["total_reward"]
     performance_ratio = constrained_total / max(unconstrained_total, 0.01)
     
-    print(f"\n📊 Comparison Summary:")
+    print(f"\n Comparison Summary:")
     print(f"   Constrained vs Unconstrained performance: {performance_ratio:.3f}")
     print(f"   Capacity utilization impact: {1 - performance_ratio:.3f}")
     
@@ -299,7 +298,7 @@ def save_experiment_results(exp1_results: Dict[str, Any],
         exp1_results: Results from UCB1 vs Oracle experiment
         exp2_results: Results from Constrained vs Unconstrained experiment
     """
-    print("\n💾 Saving results to CSV files...")
+    print("\n Saving results to CSV files...")
     
     # Ensure results directory exists
     os.makedirs("results/data", exist_ok=True)
@@ -318,7 +317,7 @@ def save_experiment_results(exp1_results: Dict[str, Any],
     
     exp1_file = "results/data/req1_ucb_vs_oracle.csv"
     exp1_df.to_csv(exp1_file, index=False)
-    print(f"✅ Saved Experiment 1 results to {exp1_file}")
+    print(f" Saved Experiment 1 results to {exp1_file}")
     
     # Save Experiment 2 results
     n_rounds = exp2_results["n_rounds"]
@@ -335,7 +334,7 @@ def save_experiment_results(exp1_results: Dict[str, Any],
     
     exp2_file = "results/data/req1_constrained_vs_unconstrained.csv"
     exp2_df.to_csv(exp2_file, index=False)
-    print(f"✅ Saved Experiment 2 results to {exp2_file}")
+    print(f" Saved Experiment 2 results to {exp2_file}")
 
 
 def create_simplified_theoretical_verification(exp1_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -349,7 +348,7 @@ def create_simplified_theoretical_verification(exp1_results: Dict[str, Any]) -> 
     Returns:
         Dictionary with verification metrics
     """
-    print("\n🔬 Creating simplified theoretical bounds verification...")
+    print("\n Creating simplified theoretical bounds verification...")
     
     # Extract clean data
     n_rounds = exp1_results["n_rounds"]
@@ -386,18 +385,18 @@ def create_simplified_theoretical_verification(exp1_results: Dict[str, Any]) -> 
     
     # *** FIXED: Overall assessment ***
     if compliance_independent < 1.0 and compliance_dependent < 1.0:
-        overall = "🎉 UCB1 SATISFIES ALL BOUNDS!"
+        overall = " UCB1 SATISFIES ALL BOUNDS!"
         color = 'lightgreen'
     elif compliance_independent < 1.0:
-        overall = "✅ UCB1 satisfies instance-independent bound"
+        overall = " UCB1 satisfies instance-independent bound"
         color = 'lightblue'
     else:
-        overall = "⚠️ UCB1 may need parameter tuning"
+        overall = " UCB1 may need parameter tuning"
         color = 'lightyellow'
     
     # Create the simplified figure with 3 subplots
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle('🔬 THEORETICAL BOUNDS VERIFICATION - UCB1 REGRET ANALYSIS', 
+    fig.suptitle(' THEORETICAL BOUNDS VERIFICATION - UCB1 REGRET ANALYSIS', 
                 fontsize=16, fontweight='bold')
     
     # Subplot 1: UCB1 Regret vs Both Theoretical Bounds (Linear Scale)
@@ -476,24 +475,24 @@ def create_simplified_theoretical_verification(exp1_results: Dict[str, Any]) -> 
     # Create summary text (MORE COMPACT)
     summary_text = f"""VERIFICATION SUMMARY
 
-📊 RESULTS:
+RESULTS:
 • Rounds: {n_rounds:,} | Arms: {K}
 • Final Regret: {final_regret:.1f}
 
-🎯 BOUNDS:
+BOUNDS:
 • Instance-Indep: {final_bound_independent:.1f}
 • Instance-Dep: {final_bound_dependent:.1f}
 
-✅ COMPLIANCE:
+COMPLIANCE:
 • Instance-Indep: {compliance_independent:.3f}
   {'✓ SATISFIED' if compliance_independent < 1.0 else '✗ VIOLATED'}
 • Instance-Dep: {compliance_dependent:.3f}
   {'✓ SATISFIED' if compliance_dependent < 1.0 else '✗ VIOLATED'}
 
-📈 SUBLINEARITY: {sublinear_indicator:.2f}
+SUBLINEARITY: {sublinear_indicator:.2f}
 {'✓ GOOD' if sublinear_indicator < 5.0 else '✗ HIGH'}
 
-🏆 {overall}"""
+{overall}"""
     
     # Display the summary (SMALLER)
     ax3.text(0.02, 0.98, summary_text, transform=ax3.transAxes,
@@ -505,17 +504,17 @@ def create_simplified_theoretical_verification(exp1_results: Dict[str, Any]) -> 
     # Save the figure
     figure_file = "results/figures/req1_theoretical_verification_simplified.png"
     plt.savefig(figure_file, dpi=300, bbox_inches='tight')
-    print(f"✅ Saved simplified theoretical verification plot to {figure_file}")
+    print(f" Saved simplified theoretical verification plot to {figure_file}")
     
     # Print concise summary to console
-    print("\n📋 THEORETICAL VERIFICATION SUMMARY:")
+    print("\n THEORETICAL VERIFICATION SUMMARY:")
     print("=" * 60)
-    print(f"🎯 Final UCB1 regret: {final_regret:.1f}")
-    print(f"📏 Instance-independent bound: {final_bound_independent:.1f}")
-    print(f"📏 Instance-dependent bound: {final_bound_dependent:.1f}")
-    print(f"✅ Instance-independent compliance: {compliance_independent:.3f} {'✓' if compliance_independent < 1.0 else '✗'}")
-    print(f"✅ Instance-dependent compliance: {compliance_dependent:.3f} {'✓' if compliance_dependent < 1.0 else '✗'}")
-    print(f"📈 Sublinear growth indicator: {sublinear_indicator:.3f}")
+    print(f" Final UCB1 regret: {final_regret:.1f}")
+    print(f" Instance-independent bound: {final_bound_independent:.1f}")
+    print(f" Instance-dependent bound: {final_bound_dependent:.1f}")
+    print(f" Instance-independent compliance: {compliance_independent:.3f} {'✓' if compliance_independent < 1.0 else '✗'}")
+    print(f" Instance-dependent compliance: {compliance_dependent:.3f} {'✓' if compliance_dependent < 1.0 else '✗'}")
+    print(f" Sublinear growth indicator: {sublinear_indicator:.3f}")
     
     if compliance_independent < 1.0:
         print("🎉 UCB1 SATISFIES the instance-independent theoretical bound!")
@@ -547,7 +546,7 @@ def create_visualizations(exp1_results: Dict[str, Any],
     Returns:
         Dictionary with verification results
     """
-    print("\n📊 Creating visualization plots...")
+    print("\n Creating visualization plots...")
     
     # Ensure results directory exists
     os.makedirs("results/figures", exist_ok=True)
@@ -621,7 +620,7 @@ def create_visualizations(exp1_results: Dict[str, Any],
     # Save figure
     figure_file = "results/figures/req1_complete_analysis.png"
     plt.savefig(figure_file, dpi=300, bbox_inches='tight')
-    print(f"✅ Saved complete analysis plot to {figure_file}")
+    print(f" Saved complete analysis plot to {figure_file}")
     
     # Create separate regret plot
     plt.figure(figsize=(10, 6))
@@ -636,10 +635,10 @@ def create_visualizations(exp1_results: Dict[str, Any],
     
     regret_file = "results/figures/req1_regret_analysis.png"
     plt.savefig(regret_file, dpi=300, bbox_inches='tight')
-    print(f"✅ Saved regret analysis plot to {regret_file}")
+    print(f" Saved regret analysis plot to {regret_file}")
     
     # *** NEW: CREATE SIMPLIFIED THEORETICAL VERIFICATION (3 SUBPLOTS) ***
-    print("\n🔬 Creating simplified theoretical bounds verification...")
+    print("\n Creating simplified theoretical bounds verification...")
     verification_results = create_simplified_theoretical_verification(exp1_results)
     
     plt.show()
@@ -650,20 +649,18 @@ def create_visualizations(exp1_results: Dict[str, Any],
 def main():
     """
     Main function to run all Requirement 1 experiments
-    *** UPDATED WITH THEORETICAL VERIFICATION ***
     """
-    print("🚀 REQUIREMENT 1: SINGLE PRODUCT & STOCHASTIC ENVIRONMENT")
-    print("🎯 Federico (Person 1) - Comprehensive Experiment Suite")
-    print("🔬 *** NEW: Including Theoretical Bounds Verification ***")
+    print(" REQUIREMENT 1: SINGLE PRODUCT & STOCHASTIC ENVIRONMENT")
+    print(" Federico (Person 1) - Comprehensive Experiment Suite")
     print("=" * 80)
     
     start_time = time.time()
     
     # Run experiments
-    print("📋 Running Experiment 1.1: UCB1 vs Oracle...")
+    print(" Running Experiment 1.1: UCB1 vs Oracle...")
     exp1_results = run_ucb1_vs_oracle_experiment(n_rounds=1000)
     
-    print("\n📋 Running Experiment 1.2: UCB1-Constrained vs UCB1-Unconstrained...")
+    print("\n Running Experiment 1.2: UCB1-Constrained vs UCB1-Unconstrained...")
     exp2_results = run_constrained_vs_unconstrained_experiment(n_rounds=1000, capacity=60)
     
     # Save results
@@ -676,30 +673,29 @@ def main():
     
     # Final summary
     print("\n" + "=" * 80)
-    print("🎉 REQUIREMENT 1 EXPERIMENTS COMPLETED!")
+    print(" REQUIREMENT 1 EXPERIMENTS COMPLETED!")
     print("=" * 80)
-    print(f"⏱️  Total execution time: {end_time - start_time:.2f} seconds")
+    print(f"  Total execution time: {end_time - start_time:.2f} seconds")
     
-    print("\n📊 Key Results:")
-    print(f"   🎯 Oracle optimal price: ${exp1_results['oracle_price']:.2f}")
-    print(f"   🤖 UCB1 best discovered price: ${exp1_results['ucb1_best_price']:.2f}")
-    print(f"   📈 UCB1 vs Oracle performance: {(exp1_results['ucb1_cumulative'][-1]/exp1_results['oracle_cumulative'][-1])*100:.1f}%")
-    print(f"   🏭 Constrained vs Unconstrained: {exp2_results['performance_ratio']:.3f}")
+    print("\n Key Results:")
+    print(f"    Oracle optimal price: ${exp1_results['oracle_price']:.2f}")
+    print(f"    UCB1 best discovered price: ${exp1_results['ucb1_best_price']:.2f}")
+    print(f"    UCB1 vs Oracle performance: {(exp1_results['ucb1_cumulative'][-1]/exp1_results['oracle_cumulative'][-1])*100:.1f}%")
+    print(f"    Constrained vs Unconstrained: {exp2_results['performance_ratio']:.3f}")
     
-    # *** NEW: THEORETICAL VERIFICATION SUMMARY ***
-    print("\n🔬 THEORETICAL VERIFICATION:")
-    print(f"   📏 Instance-independent bound compliance: {verification_results['compliance_independent']:.3f}")
-    print(f"   📏 Instance-dependent bound compliance: {verification_results['compliance_dependent']:.3f}")
-    print(f"   📈 Sublinearity indicator: {verification_results['sublinear_indicator']:.3f}")
-    print(f"   ✅ UCB1 theoretical guarantee: {'SATISFIED' if verification_results['compliance_independent'] < 1.0 else 'VIOLATED'}")
-    print(f"   📊 Sublinear regret achieved: {'YES' if verification_results['sublinear_indicator'] < 5.0 else 'NO'}")
+    print("\n THEORETICAL VERIFICATION:")
+    print(f"    Instance-independent bound compliance: {verification_results['compliance_independent']:.3f}")
+    print(f"    Instance-dependent bound compliance: {verification_results['compliance_dependent']:.3f}")
+    print(f"    Sublinearity indicator: {verification_results['sublinear_indicator']:.3f}")
+    print(f"    UCB1 theoretical guarantee: {'SATISFIED' if verification_results['compliance_independent'] < 1.0 else 'VIOLATED'}")
+    print(f"    Sublinear regret achieved: {'YES' if verification_results['sublinear_indicator'] < 5.0 else 'NO'}")
     
-    print("\n📁 Generated Files:")
-    print("   📄 results/data/req1_ucb_vs_oracle.csv")
-    print("   📄 results/data/req1_constrained_vs_unconstrained.csv")
-    print("   📊 results/figures/req1_complete_analysis.png")
-    print("   📊 results/figures/req1_regret_analysis.png")
-    print("   🔬 results/figures/req1_theoretical_verification_simplified.png *** NEW ***")
+    print("\n Generated Files:")
+    print("    results/data/req1_ucb_vs_oracle.csv")
+    print("    results/data/req1_constrained_vs_unconstrained.csv")
+    print("    results/figures/req1_complete_analysis.png")
+    print("    results/figures/req1_regret_analysis.png")
+    print("    results/figures/req1_theoretical_verification_simplified.png")
 
   
     return exp1_results, exp2_results, verification_results
