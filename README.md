@@ -44,9 +44,12 @@ online-learning-applications-project-2025/
 ├── main.py
 ├── environments/          # Testing environments
 │   ├── __init__.py        # Base environment classes
-│   ├── stochastic.py      # Stochastic environments (Person 1)
-│   ├── non_stationary.py  # Highly non-stationary (Person 1)
-│   └── slightly_ns.py     # Slightly non-stationary (Person 3)
+│   ├── stochastic.py      # Stochastic environments 
+│   ├── non_stationary.py  # Multiproduct non-stationary
+│   ├── multi_non_stationary.py  # Highly Stochastic
+│   ├── multi_stochastic.py  # Highly non-stationary
+│   └── slightly_ns.py     # Slightly non-stationary 
+│
 ├── algorithms/            # Algorithm implementations
 │   ├── __init__.py        # Base algorithm classes
 │   ├── single_product/    # Single product algorithms
@@ -56,14 +59,22 @@ online-learning-applications-project-2025/
 │   └── multiple_products/  # Multiple product algorithms
 │       ├── combinatorial_ucb.py
 │       ├── sliding_window.py
+│       ├── thompson_sampling.py
 │       └── primal_dual.py
-├── experiments/          # Experiment scripts
+│
+├── requirement_5_files/    
+│   ├── thompson_sampling_cusum.py
+│   ├── test_sliding_window_slightly_ns.py
+│   ├── test_compare_sliding_vs_primaldual.py
+│   └── sliding_window_cusum.py
+│
+├── experiments/         # Experiment scripts
 │   ├── requirement1.py  #  Req 1
 │   ├── requirement2.py  #  Req 2
 │   ├── requirement3.py  #  Req 3
 │   ├── requirement4.py  #  Req 4
 │   └── requirement5.py  #  Req 5
-├── requirement_5_files/               # Files to execute requirement 5
+│           # Files to execute requirement 5
 │
 ├── results/             # Experiment results
 │   ├── figures/         # Generated plots
