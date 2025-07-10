@@ -1,5 +1,5 @@
 from environments.slightly_ns import MultiProductPiecewiseStationaryEnvironment
-from sliding_window_cusum import SlidingWindowCUCB
+from requirement_5_files.sliding_window_cusum import SlidingWindowCUCB
 from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
 
 def test_compare():

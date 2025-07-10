@@ -5,7 +5,7 @@ import seaborn as sns
 import os
 from itertools import product
 
-from sliding_window_cusum import SlidingWindowCUCB
+from requirement_5_files.sliding_window_cusum import SlidingWindowCUCB
 from environments.slightly_ns import MultiProductPiecewiseStationaryEnvironment
 
 # Parameters

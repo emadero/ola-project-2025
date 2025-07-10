@@ -2,7 +2,7 @@
 
 """
 Requirement 4: Best-of-Both-Worlds with Multiple Products
-Assigned to: Maxence Guyot
+
 
 This experiment evaluates the Primal-Dual algorithm with inventory constraint
 on two types of multi-product environments:
@@ -54,7 +54,7 @@ def run_experiment(env, algo_name, title):
     inventory_used = 0
     rounds = []
 
-    print(f"\n📊 {title}")
+    print(f"\n {title}")
     print("=" * 60)
     
     LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
@@ -93,14 +93,14 @@ def run_experiment(env, algo_name, title):
         rounds.append(t + 1)
 
         if done:
-            print("\n🛑 Environment finished.")
+            print("\n Environment finished.")
             break
 
-    print(f"\n💰 Total Revenue: {total_revenue:.2f}")
+    print(f"\n Total Revenue: {total_revenue:.2f}")
 
     df_log = pd.DataFrame(log_rows)
     df_log.to_csv(csv_path, index=False)
-    print(f"📁 Log saved to: {csv_path}")
+    print(f" Log saved to: {csv_path}")
 
     # Plot results
     fig, axs = plt.subplots(2, 1, figsize=(10, 6))
@@ -168,9 +168,8 @@ def run_experiment(env, algo_name, title):
     plt.show()
 
 
-
 def main():
-    print("📊 Requirement 4: Best-of-Both-Worlds with Multiple Products")
+    print(" Requirement 4: Best-of-Both-Worlds with Multiple Products")
     print("   Algorithm: Primal-Dual")
     print("   Environments: Stochastic & Highly Non-Stationary\n")
 
@@ -197,7 +196,5 @@ def main():
     run_experiment(non_stationary_env, "Primal-Dual (Non-Stationary)", "Requirement 4 - Non-Stationary Environment")
     
     
-
-
 if __name__ == "__main__":
     main()

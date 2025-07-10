@@ -1,7 +1,6 @@
 # experiments/requirement2.py
 """
 Requirement 2: Multiple Products & Stochastic Environment
-Assigned to: Maxence Guyot
 
 This experiment implements the Combinatorial UCB1 algorithm for multi-product pricing
 in a stochastic environment with joint buyer valuations.

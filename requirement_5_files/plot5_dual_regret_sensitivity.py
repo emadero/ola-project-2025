@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from sliding_window_cusum import SlidingWindowCUCB
+from requirement_5_files.sliding_window_cusum import SlidingWindowCUCB
 from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
 from environments.slightly_ns import MultiProductPiecewiseStationaryEnvironment
 

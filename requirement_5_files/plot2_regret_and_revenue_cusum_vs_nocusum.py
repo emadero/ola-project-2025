@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-from sliding_window_cusum import SlidingWindowCUCB
+from requirement_5_files.sliding_window_cusum import SlidingWindowCUCB
 from environments.slightly_ns import MultiProductPiecewiseStationaryEnvironment
 
 # Parameters

@@ -63,10 +63,8 @@ online-learning-applications-project-2025/
 │   ├── requirement3.py  #  Req 3
 │   ├── requirement4.py  #  Req 4
 │   └── requirement5.py  #  Req 5
-├── utils/               
-│   ├── __init__.py
-│   ├── metrics.py       # Performance metrics
-│   └── visualization.py # Plotting functions
+├── requirement_5_files/               # Files to execute requirement 5
+│
 ├── results/             # Experiment results
 │   ├── figures/         # Generated plots
 │   └── data/            # Numerical results
@@ -163,12 +161,6 @@ The `ConstraintHandler` class provides utilities for:
 - **Week 3**: Advanced methods (primal-dual)
 - **Week 4**: Integration, testing, and presentation
 
-### Shared Standards
-- All code must follow the base class interfaces
-- Use type hints for all function signatures  
-- Document all classes and methods
-- Write unit tests for core functionality
-- Use consistent naming conventions
 
 ### Communication
 - Weekly sync meetings to ensure compatibility
@@ -200,12 +192,3 @@ Key metrics to track:
 
 - **Deadline**: July 11th, 2025
 - **Presentations**: Days following submission
-
-## Contributing
-
-1. Follow the established code structure
-2. Implement your assigned requirements
-3. Test integration with base classes
-4. Document your implementations
-5. Coordinate with team members for shared components
-

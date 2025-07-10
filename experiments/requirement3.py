@@ -84,11 +84,11 @@ def run_stochastic_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     optimal_rewards = env.simulate_oracle(n_rounds=n_rounds)
     optimal_cumulative = np.cumsum(optimal_rewards)
     
-    print(f"🎯 Optimal price: ${optimal_price:.2f}")
-    print(f"🎯 Optimal total reward: ${optimal_cumulative[-1]:.2f}")
+    print(f" Optimal price: ${optimal_price:.2f}")
+    print(f" Optimal total reward: ${optimal_cumulative[-1]:.2f}")
     
     # Create Primal-Dual algorithm with theoretical parameters
-    print("🧠 Running Primal-Dual algorithm...")
+    print(" Running Primal-Dual algorithm...")
     
     primal_dual = PrimalDualPricingAlgorithm(
         prices=prices,
@@ -281,7 +281,7 @@ def run_nonstationary_experiment(n_rounds: int = 1000) -> Dict[str, Any]:
     # Analyze adaptation patterns
     adaptation_analysis = analyze_adaptation_patterns(rewards, distribution_changes)
     
-    print(f"\n📊 NON-STATIONARY RESULTS:")
+    print(f"\n NON-STATIONARY RESULTS:")
     print(f"   Total reward: ${cumulative_rewards[-1]:.2f}")
     print(f"   Average reward: ${np.mean(rewards):.3f}")
     print(f"   Distribution changes: {len(distribution_changes)} times")
@@ -552,10 +552,10 @@ def main():
     start_time = time.time()
     
     # Run experiments as specified in requirement
-    print("📋 Experiment 3.1: Primal-Dual in Stochastic Environment")
+    print(" Experiment 3.1: Primal-Dual in Stochastic Environment")
     stochastic_results = run_stochastic_experiment(n_rounds=1000)
     
-    print("\n📋 Experiment 3.2: Primal-Dual in Non-Stationary Environment")
+    print("\n Experiment 3.2: Primal-Dual in Non-Stationary Environment")
     nonstationary_results = run_nonstationary_experiment(n_rounds=1000)
     
     # Save results
@@ -583,7 +583,7 @@ def main():
     stoch_good = stochastic_results['performance_vs_optimal'] >= 0.95
     adapt_good = nonstationary_results['adaptation_analysis']['avg_adaptation_time'] <= 30
     
-    print(f"\n🔬 REQUIREMENT ACHIEVEMENT:")
+    print(f"\n REQUIREMENT ACHIEVEMENT:")
     print(f"   Primal-dual algorithm implemented with inventory constraints")
     print(f"   Stochastic environment tested (reused from Req 1)")
     print(f"   Highly non-stationary environment built")
@@ -593,13 +593,6 @@ def main():
     print("   results/data/req3_primal_dual_stochastic.csv")
     print("   results/data/req3_primal_dual_nonstationary.csv")
     print("   results/figures/req3_primal_dual_analysis.png")
-    
-    print("\n KEY CONTRIBUTIONS:")
-    print("   1. Extended general auctions framework to pricing with inventory")
-    print("   2. Implemented theoretically-grounded primal-dual method")
-    print("   3. Built highly non-stationary environment with rapid changes")
-    print("   4. Demonstrated best-of-both-worlds empirically")
-    print("   5. Validated dual variable as automatic adaptation mechanism")
     
     return stochastic_results, nonstationary_results
 

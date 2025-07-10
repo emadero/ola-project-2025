@@ -21,7 +21,7 @@ def to_reward_dict(raw_rewards):
     return raw_rewards
 
 def run_single_experiment():
-    print("\n🚀 Running main comparison: Sliding Window CUCB vs Primal-Dual")
+    print("\n Running main comparison: Sliding Window CUCB vs Primal-Dual")
     prices = [0.2, 0.4, 0.6, 0.8]
     env_config = dict(
         n_products=3,
@@ -89,7 +89,7 @@ def run_single_experiment():
     print("✅ Saved main comparison plot and CSV.")
 
 def run_grid_analysis():
-    print("\n📊 Running sensitivity analysis (window size × intervals)")
+    print("\n Running sensitivity analysis (window size × intervals)")
     prices = [0.2, 0.4, 0.6, 0.8]
     window_sizes    = [5, 10, 20]
     interval_lengths = [2, 4, 8]
@@ -159,14 +159,14 @@ def run_grid_analysis():
             plt.savefig(f"results/figures/{fname}.png")
             plt.close()
 
-            print(f"✅ Saved: results/data/{fname}.csv")
-            print(f"📊 Plot: results/figures/{fname}.png")
+            print(f" Saved: results/data/{fname}.csv")
+            print(f" Plot: results/figures/{fname}.png")
 
 def main():
-    print("📋 Requirement 5: Slightly Non-Stationary Environment Analysis")
+    print(" Requirement 5: Slightly Non-Stationary Environment Analysis")
     run_single_experiment()
     run_grid_analysis()
-    print("\n🏁 All experiments completed.")
+    print("\n All experiments completed.")
 
 if __name__ == "__main__":
     main()
