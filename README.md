@@ -24,12 +24,12 @@ A company must choose prices dynamically for multiple products:
 - Requirement 3: Best-of-Both-Worlds (Single Product)
 - Base environments for team extension
 
-### Person 2: Multiple Products Specialist  
+### Person 2: Maxence Guyot - Multiple Products Specialist  
 **Responsibilities:**
 - Requirement 2: Multiple Products & Stochastic Environment
 - Requirement 4: Best-of-Both-Worlds (Multiple Products)
 
-### Person 3: Analysis & Comparison Specialist
+### Person 3: Amirhassan Darvishzade - Analysis & Comparison Specialist
 **Responsibilities:**
 - Requirement 5: Slightly Non-Stationary Environments
 - Performance analysis and visualization
