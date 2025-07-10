@@ -70,25 +70,3 @@ class CombinatorialUCB1Algorithm:
             j = self.prices.index(price)
             self.counts[i, j] += 1
             self.rewards[i, j] += rewards.get(i, 0.0)
-            
-
-    def get_final_ucbs(self):
-        """
-        Return the final UCB values for each product and price index.
-        """
-        ucbs = {}
-
-        for pid in range(self.n_products):
-            product_ucbs = []
-            for i in range(self.n_prices):
-                pulls = self.counts[pid, i]
-                if pulls == 0:
-                    mean = 0.0
-                    bonus = float("inf")
-                else:
-                    mean = self.rewards[pid, i] / pulls
-                    bonus = np.sqrt((2 * np.log(self.total_rounds)) / pulls)
-                product_ucbs.append(mean + bonus)
-            ucbs[pid] = product_ucbs
-
-        return ucbs

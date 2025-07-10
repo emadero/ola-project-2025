@@ -1,4 +1,3 @@
-
 from environments.slightly_ns import MultiProductPiecewiseStationaryEnvironment
 from algorithms.multiple_products.sliding_window import SlidingWindowCUCB
 from algorithms.multiple_products.primal_dual import PrimalDualMultipleProducts
@@ -8,6 +7,18 @@ import os
 
 def align_series(y, rounds):
     return pd.Series(y, index=rounds).cumsum()
+
+def to_price_dict(raw_sel):
+    """Ensure prices_selected is a dict for env.step()."""
+    if isinstance(raw_sel, list):
+        return {p: raw_sel[p] for p in range(len(raw_sel))}
+    return raw_sel
+
+def to_reward_dict(raw_rewards):
+    """Ensure rewards is a dict for agent.update()."""
+    if isinstance(raw_rewards, list):
+        return {p: raw_rewards[p] for p in range(len(raw_rewards))}
+    return raw_rewards
 
 def run_single_experiment():
     print("\n🚀 Running main comparison: Sliding Window CUCB vs Primal-Dual")
@@ -21,18 +32,26 @@ def run_single_experiment():
         random_seed=42
     )
 
+    # --- Sliding Window CUCB run ---
     env_sw = MultiProductPiecewiseStationaryEnvironment(**env_config)
     agent_sw = SlidingWindowCUCB(n_products=3, prices=prices, window_size=10)
     env_sw.reset()
+
     sw_rewards = []
     while True:
-        prices_selected = agent_sw.select_prices()
-        buyer_info, rewards, done = env_sw.step(prices_selected)
+        raw_sel = agent_sw.select_prices()
+        prices_selected = to_price_dict(raw_sel)
+
+        buyer_info, raw_rewards, done = env_sw.step(prices_selected)
+        rewards = to_reward_dict(raw_rewards)
+
         agent_sw.update(prices_selected, rewards)
         sw_rewards.append(sum(rewards.values()))
+
         if done:
             break
 
+    # --- Primal‐Dual run ---
     env_pd = MultiProductPiecewiseStationaryEnvironment(**env_config)
     agent_pd = PrimalDualMultipleProducts(
         price_candidates=prices,
@@ -43,13 +62,13 @@ def run_single_experiment():
     )
     pd_history = agent_pd.run(env_pd)
 
+    # Align & save
     min_len = min(len(sw_rewards), len(pd_history["revenues"]))
-    rounds = list(range(1, min_len + 1))
-
+    rounds   = list(range(1, min_len + 1))
     df = pd.DataFrame({
         "round": rounds,
         "sliding_window": align_series(sw_rewards[:min_len], rounds),
-        "primal_dual": align_series(pd_history["revenues"][:min_len], rounds),
+        "primal_dual":    align_series(pd_history["revenues"][:min_len], rounds),
     })
 
     os.makedirs("results/data", exist_ok=True)
@@ -58,7 +77,7 @@ def run_single_experiment():
     os.makedirs("results/figures", exist_ok=True)
     plt.figure()
     plt.plot(df["round"], df["sliding_window"], label="SlidingWindowCUCB")
-    plt.plot(df["round"], df["primal_dual"], label="PrimalDual")
+    plt.plot(df["round"], df["primal_dual"],    label="PrimalDual")
     plt.title("Requirement 5: Algorithm Comparison")
     plt.xlabel("Round")
     plt.ylabel("Cumulative Revenue")
@@ -72,7 +91,7 @@ def run_single_experiment():
 def run_grid_analysis():
     print("\n📊 Running sensitivity analysis (window size × intervals)")
     prices = [0.2, 0.4, 0.6, 0.8]
-    window_sizes = [5, 10, 20]
+    window_sizes    = [5, 10, 20]
     interval_lengths = [2, 4, 8]
 
     for ws in window_sizes:
@@ -86,18 +105,26 @@ def run_grid_analysis():
                 random_seed=42
             )
 
+            # Sliding Window run
             env_sw = MultiProductPiecewiseStationaryEnvironment(**env_config)
             agent_sw = SlidingWindowCUCB(n_products=3, prices=prices, window_size=ws)
             env_sw.reset()
+
             sw_rewards = []
             while True:
-                prices_selected = agent_sw.select_prices()
-                buyer_info, rewards, done = env_sw.step(prices_selected)
+                raw_sel = agent_sw.select_prices()
+                prices_selected = to_price_dict(raw_sel)
+
+                buyer_info, raw_rewards, done = env_sw.step(prices_selected)
+                rewards = to_reward_dict(raw_rewards)
+
                 agent_sw.update(prices_selected, rewards)
                 sw_rewards.append(sum(rewards.values()))
+
                 if done:
                     break
 
+            # Primal‐Dual run
             env_pd = MultiProductPiecewiseStationaryEnvironment(**env_config)
             agent_pd = PrimalDualMultipleProducts(
                 price_candidates=prices,
@@ -108,13 +135,13 @@ def run_grid_analysis():
             )
             pd_history = agent_pd.run(env_pd)
 
+            # Align & save
             min_len = min(len(sw_rewards), len(pd_history["revenues"]))
-            rounds = list(range(1, min_len + 1))
-
+            rounds   = list(range(1, min_len + 1))
             df = pd.DataFrame({
                 "round": rounds,
                 "sliding_window": align_series(sw_rewards[:min_len], rounds),
-                "primal_dual": align_series(pd_history["revenues"][:min_len], rounds),
+                "primal_dual":    align_series(pd_history["revenues"][:min_len], rounds),
             })
 
             fname = f"req5_ws{ws}_int{ni}"
@@ -122,7 +149,7 @@ def run_grid_analysis():
 
             plt.figure()
             plt.plot(df["round"], df["sliding_window"], label=f"SW-CUCB (ws={ws})")
-            plt.plot(df["round"], df["primal_dual"], label="PrimalDual")
+            plt.plot(df["round"], df["primal_dual"],    label="PrimalDual")
             plt.title(f"Grid: Window={ws}, Intervals={ni}")
             plt.xlabel("Round")
             plt.ylabel("Cumulative Revenue")

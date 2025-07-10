@@ -35,11 +35,6 @@ class PerProductPrimalDual:
         # Exponentiated gradient (Hedge)
         self.weights *= np.exp(self.learning_rate * gains)
         self.probs = self.weights / np.sum(self.weights)
-        
-        # Sanity check to avoid NaNs
-        if np.any(np.isnan(self.probs)) or np.sum(self.probs) == 0:
-            # Fallback to uniform
-            self.probs = np.ones_like(self.weights) / len(self.weights)
 
 
 class PrimalDualMultipleProducts:
