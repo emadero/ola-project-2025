@@ -278,13 +278,13 @@ env_cfg = dict(
 )
 
 agents = [
-    ("SW", SlidingWindowCUCB(n_products, prices, window_size=20)),
+    ("SW-CUCB", SlidingWindowCUCB(n_products, prices, window_size=20)),
     ("SW-CUSUM", SlidingWindowCUCB(n_products, prices, window_size=20,
-                                   delta=0.03, cusum_threshold=1.02)),
+                                   delta=0.0106, cusum_threshold=1.8)),
     ("TS-SW", ThompsonSamplingSlidingWindow(n_products, prices,
-                                            window_size=50)),
+                                            window_size=20)),
     ("TS-CUSUM", ThompsonSamplingCUSUM(n_products, prices,
-                                       delta=0.005, threshold=1.07)),
+                                       delta=0.025, threshold=1.67)),
 ]
 
 results = {}
@@ -379,4 +379,19 @@ plt.xlabel("Algorithm")
 plt.ylabel("Final Revenue")
 plt.tight_layout()
 plt.savefig("results/final_comparison/bar_revenue.png")
+plt.show()
+
+
+# Plot Average Regret per Round
+plt.figure(figsize=(10, 5))
+for name, (_, reg) in results.items():
+    avg_reg = np.array([reg[t] / (t + 1) for t in range(len(reg))])
+    plt.plot(avg_reg, label=name)
+plt.title("Average Regret per Round")
+plt.xlabel("Round")
+plt.ylabel("Average Regret R(t)/t")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("results/final_comparison/avg_regret.png")
 plt.show()
